@@ -67,7 +67,3 @@ python main.py --years 6 --benchmark-size 1500
 
 Para los algoritmos cuadráticos, se usa un subconjunto de enteros del dataset unificado al medir tiempos para mantener viabilidad computacional y comparar los 12 métodos en condiciones equivalentes.
 
-## Documentación
-
-- Justificación técnica: `DOCUMENTO_JUSTIFICACION.md`
-- Documentación completa de código y flujo: `DOCUMENTACION_CODIGO_Y_FLUJO.md`
