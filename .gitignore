@@ -1,0 +1,16 @@
+# Python virtual environment
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Generated ETL data and reports (regenerable)
+data/raw/
+data/processed/
+outputs/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
