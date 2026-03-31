@@ -21,6 +21,19 @@ from pathlib import Path
 import requests
 
 
+def _filter_rows_since(rows: list[dict[str, str]], start_date: dt.date) -> list[dict[str, str]]:
+    """Filtra filas con fecha valida mayores o iguales a start_date."""
+    filtered: list[dict[str, str]] = []
+    for row in rows:
+        try:
+            row_date = dt.date.fromisoformat(row["Date"])
+        except Exception:
+            continue
+        if row_date >= start_date:
+            filtered.append(row)
+    return filtered
+
+
 def fetch_asset_csv(asset: str, start_date: dt.date, out_dir: Path) -> list[dict[str, str]]:
     """Descarga y parsea el historico diario de un activo.
 
@@ -38,6 +51,7 @@ Raises:
     """
     symbol = f"{asset.lower()}.us"
     url = f"https://stooq.com/q/d/l/?s={symbol}&i=d"
+    csv_path = out_dir / f"{asset}.csv"
     last_error: Exception | None = None
 
     for _ in range(3):
@@ -48,15 +62,28 @@ Raises:
             if not text or text.startswith("No data"):
                 raise ValueError(f"Sin datos para {asset} en Stooq")
 
-            csv_path = out_dir / f"{asset}.csv"
             # Guardar crudo en CSV facilita trazabilidad y reproducibilidad:
             # se puede inspeccionar exactamente lo recibido de la API.
             csv_path.write_text(text, encoding="utf-8")
 
             rows = list(csv.DictReader(text.splitlines()))
-            return [r for r in rows if dt.date.fromisoformat(r["Date"]) >= start_date]
+            filtered_rows = _filter_rows_since(rows, start_date)
+            if filtered_rows:
+                return filtered_rows
+            raise ValueError(f"Descarga de {asset} sin filas validas desde {start_date.isoformat()}")
         except Exception as exc:
             last_error = exc
             time.sleep(1)
 
-    raise RuntimeError(f"No fue posible descargar {asset}: {last_error}")
+    if csv_path.exists():
+        text = csv_path.read_text(encoding="utf-8").strip()
+        if text:
+            rows = list(csv.DictReader(text.splitlines()))
+            filtered_rows = _filter_rows_since(rows, start_date)
+            if filtered_rows:
+                return filtered_rows
+
+    raise RuntimeError(
+        f"No fue posible descargar {asset}: {last_error}. "
+        "Tampoco se encontro un CSV local util en data/raw."
+    )
